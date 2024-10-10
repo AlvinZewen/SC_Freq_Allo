@@ -1,0 +1,190 @@
+*This command allows End-Of-Line comment. (!!) is the notation for EOL comments
+$Oneolcom  
+* This commands turns the EOL comment notation to (&&) instead of (!!)
+* $eolcom &&
+
+
+Set
+$include 4x4_grid_PBC1.inc
+
+C      'Addressability, Entanglement gate, and neighbor constraints' /A1,A2i,A2j,E1,E2,D1,S1,S2,T1/ !! CR
+
+Alias (N,V,I,J,K,L)
+
+* set the constraints
+Parameter d_bar(C) / A1 0.037, A2i 0.05, A2j 0.05, E1 0.037, E2 0.05, D1 0.002, S1 0.037, S2 0.045, T1 0.037/; !! CR
+
+Parameter big_M / 1000 /;
+Parameter big_O / 1000 /;
+
+Parameter set_N(I,J,K);
+Parameter set_N2(I,J,K,L);
+
+* fixed anharmonicity ;
+Parameter a / -0.35 /;
+
+VARIABLES
+   objval     'objective value' 
+   f(V)       'node frequency' 
+   d(C)       'right-hand side of constraints' 
+   abs_diff(I,J)
+
+BINARY VARIABLES
+  a2i(I,J)
+  a2j(I,J)
+  e2i(I,J)
+  e2j(I,J)
+  d1i(I,J)   !!these two give the absolute values of constrint D1;
+  d1j(I,J)
+  o(I,J)     !!gives the orientation assocaited with I and J;
+  os2(I,J)
+  t1(I,J,K)
+  ab(I,J)  !!for absolute value
+  diff(I,J,K,L);
+
+* Please note this is an ordered set, ie. (012)!= (210)
+set_N(I,J,K) = 1$((ord(J)<>ord(K)) and (E(I,J) or E(J,I)) and (E(I,K) or E(K,I)));
+set_N2(I,J,K,L) = 1$(ord(I)<ord(J) and ord(I)< ord(K) and ord(K)< ord(L) and E(I,J) and E(K,L) and ord(K) <> ord(I) and ord(J) <> ord(K) and ord(I) <> ord(L) and ord(J) <> ord(L));
+
+
+EQUATIONS
+obj             'Objective function'
+
+* set constraints on orientation variables 
+orientation        'set the equality of (i->j) == -(j->i)'
+orientation_t1   'set the equality of (k->j) == (j->k)'
+
+declare_abs_1
+declare_abs_2
+declare_abs_3
+declare_abs_4
+
+pairwise_sep_plus
+pairwise_sep_minu
+
+* A1 and A2
+type_a1_plus    'The (+) side of the Type 1 Addressability constraints'
+type_a1_minu    'The (-) side of the Type 1 Addressability constraints'
+type_a2_plus_i    'The (+) side of the Type 2 Addressability constraints for i'
+type_a2_minu_i    'The (-) side of the Type 2 Addressability constraints for i'
+type_a2_plus_j    'The (+) side of the Type 2 Addressability constraints for j'
+type_a2_minu_j    'The (-) side of the Type 2 Addressability constraints for j'
+
+* E1 and E2
+type_e1_plus    'The (+) side of the Type 1 Entanglement gate constraints'
+type_e1_minu    'The (-) side of the Type 1 Entanglement gate constraints'
+type_e2_plus_i    'The (+) side of the Type 2 Entanglement gate constraints'
+type_e2_minu_i    'The (-) side of the Type 2 Entanglement gate constraints'
+type_e2_plus_j    'The (+) side of the Type 2 Entanglement gate constraints'
+type_e2_minu_j    'The (-) side of the Type 2 Entanglement gate constraints'
+
+* C1
+type_c1_ai         'The right side of the fi>fj'
+type_c1_aj         'The right side of the fi<fj'
+type_c1_bi         'The left side of the fi>fj'
+type_c1_bj         'The left side of the fi>fj'
+
+* D1
+type_d1_plus_i    'The (+) side of the fi>fj'
+type_d1_minus_i   'The (-) side of the fi>fj'
+type_d1_plus_j    'The (+) side of the fi<fj'
+type_d1_minus_j   'The (-) side of the fi<fj'
+
+*type_s1_0         'fi<fj'
+type_s1_plus      'The (+) side of the fi>fj'
+type_s1_minu      'The (-) side of the fi>fj'
+
+* type_s2_0         'fi<fj'
+type_s2_plus      'The (+) side of the fi>fj'
+type_s2_minu     'The (-) side of the fi>fj'
+
+* type_t1_0         'fi<fj'
+type_t1_plus      'The (+) side of the fi>fj'
+type_t1_minu     'The (-) side of the fi>fj';
+
+
+
+obj..		                                        sum(C, d(C) - d_bar(C) ) =e= objval;  
+
+* orientation optimization
+orientation(I,J)$( ord(I) <> ord(J) )..    o(I,J) =e= 1 - o(J,I);
+orientation_t1(I,J,K)$(set_N(I,J,K))..    t1(I,J,K) =e= t1(I,K,J);
+
+* declare the frequency difference at each edge
+declare_abs_1(I,J)$(E(I,J)).. abs_diff(I,J) =g= f(I) - f(J);
+declare_abs_2(I,J)$(E(I,J)).. abs_diff(I,J) =g= f(J) - f(I);
+declare_abs_3(I,J)$(E(I,J)).. abs_diff(I,J) =l= f(I) - f(J) + big_M*(1-ab(I,J));
+declare_abs_4(I,J)$(E(I,J)).. abs_diff(I,J) =l= f(J) - f(I) + big_M*(ab(I,J));
+
+*impose edge-wise difference
+pairwise_sep_plus(I,J,K,L)$(set_N2(I,J,K,L)).. abs_diff(I,J) - abs_diff(K,L) =g= 0.002 - big_M*diff(I,J,K,L);
+pairwise_sep_minu(I,J,K,L)$(set_N2(I,J,K,L)).. abs_diff(K,L) - abs_diff(I,J) =g= 0.002 - big_M*(1- diff(I,J,K,L));
+
+type_a1_plus(E(I,J))..                        f(I) - f(J)        + big_M*o(I,J)  =g= d('A1');
+type_a1_minu(E(I,J))..                            -f(I) + f(J)   + big_M*(1-o(I,J))      =g= d('A1');
+
+type_a2_plus_j(E(I,J))..                      f(I) - a - f(J) + big_O*a2j(I,J)     + big_M*o(J,I) =g= d('A2j');
+type_a2_minu_j(E(I,J))..                     -f(I) + a + f(J) + big_O*(1-a2j(I,J)) + big_M*o(J,I) =g= d('A2j');
+type_a2_plus_i(E(I,J))..                      f(J) - a - f(I) + big_O*a2i(J,I)     + big_M*o(I,J) =g= d('A2i');
+type_a2_minu_i(E(I,J))..                     -f(J) + a + f(I) + big_O*(1-a2i(J,I)) + big_M*o(I,J) =g= d('A2i');
+
+type_e1_plus(E(I,J))..                      f(I) - f(J)            + big_M*o(I,J)     =g= d('E1');
+type_e1_minu(E(I,J))..                     -f(I) + f(J)            + big_M*(1-o(I,J)) =g= d('E1');
+
+type_e2_plus_i(E(I,J))..                      f(I) - f(J) - a + big_O*e2i(I,J) + big_M*o(J,I)    =g= d('E2');
+type_e2_minu_i(E(I,J))..                     -f(I) + f(J) + a + big_O*(1-e2i(I,J)) + big_M*o(J,I)    =g= d('E2');
+type_e2_plus_j(E(I,J))..                      f(J) - f(I) - a + big_O*e2j(J,I) + big_M*o(I,J)    =g= d('E2');
+type_e2_minu_j(E(I,J))..                     -f(J) + f(I) + a + big_O*(1-e2j(J,I)) + big_M*o(I,J)    =g= d('E2');
+
+type_d1_plus_i(E(I,J))..                      f(I) - f(J) - a/2 + big_O*d1i(I,J) + big_M*o(J,I)    =g= d('D1');
+type_d1_minus_i(E(I,J))..                -f(I) + f(J) + a/2 + big_O*(1-d1i(I,J)) + big_M*o(J,I)    =g= d('D1');
+type_d1_plus_j(E(I,J))..                  f(J) - f(I) - a/2 + big_O*d1j(J,I) + big_M*o(I,J)    =g= d('D1');
+type_d1_minus_j(E(I,J))..            -f(J) + f(I) + a/2 + big_O*(1-d1j(J,I)) + big_M*o(I,J)    =g= d('D1');
+
+type_c1_ai(E(I,J))..                         f(I) - f(J) + a - big_M*o(I,J) =l= 0;
+type_c1_aj(E(I,J))..                             f(J) - f(I) + a - big_M*o(J,I) =l= 0;
+type_c1_bi(E(I,J))..                             f(I) - f(J) + big_M*o(I,J) =g= 0;
+type_c1_bj(E(I,J))..                                 f(J) - f(I) + big_M*(1-o(I,J)) =g= 0;
+
+* S1 (please note here we only have to discuss the order of j,i,k. for order of k,i,j, they will be discuss separately)
+type_s1_plus(I,J,K)$(set_N(I,J,K))..         f(J) - f(K)  + big_O*o(J,K) + big_M*o(I,J)    =g= d('S1');
+type_s1_minu(I,J,K)$(set_N(I,J,K))..   -f(J) + f(K)  + big_O*o(K,J) + big_M*o(I,J)    =g= d('S1');
+
+* S2 
+type_s2_plus(I,J,K)$(set_N(I,J,K))..         f(J) - f(K) - a + big_O*os2(J,K) + big_M*o(I,J)    =g= d('S2');
+type_s2_minu(I,J,K)$(set_N(I,J,K))..   -f(J) + f(K) + a + big_O*(1-os2(J,K)) + big_M*o(I,J)    =g= d('S2');
+
+* T1
+type_t1_plus(I,J,K)$(set_N(I,J,K))..         f(J) + f(K) - 2*f(I) - a + big_O*t1(I,J,K) + big_M*o(I,J)    =g= d('T1');
+type_t1_minu(I,J,K)$(set_N(I,J,K))..   -f(J) - f(K) + 2*f(I) + a + big_O*(1-t1(I,J,K)) + big_M*o(I,J)    =g= d('T1');
+
+model FREQ_ALLOC / ALL /; 
+
+option iterlim = 10000;  
+option reslim = 20000;  
+option limrow = 10000;
+option limcol = 10000;
+
+
+f.up(N) = 5.98;        !! Upper bound on frequency
+f.lo(N) = 4.52;      !! Lower bound on frequency
+d.lo(C) = d_bar(C); !! Lower bound on delta
+d.up(C) = 100;      !! Upper bound on delta
+
+$include initial_guess.inc
+
+
+FREQ_ALLOC.optfile = 1;
+
+* * Increase the number of parallel threads.
+$onecho > cplex.opt
+threads 64
+mipstart 1 
+$offecho
+
+SOLVE FREQ_ALLOC MAXIMIZING objval USING MIP;
+
+file csv /freqs.csv/;
+csv.nd = 7; csv.lw = 20
+put csv 
+loop(I, put ord(I), ', ', f.l(I)/);
