@@ -30,7 +30,7 @@ VARIABLES
    abs_diff(I,J)
 
 BINARY VARIABLES
-  a2i(I,J)
+  a2i(I,J)    !!
   a2j(I,J)
   e2i(I,J)
   e2j(I,J)
