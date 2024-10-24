@@ -54,12 +54,14 @@ obj             'Objective function'
 orientation        'set the equality of (i->j) == -(j->i)'
 orientation_t1   'set the equality of (k->j) == (j->k)'
 
-declare_abs_1
+* declare edge difference
+declare_abs_1   'the relation between f(i) and f(j) in each edge'
 declare_abs_2
 declare_abs_3
 declare_abs_4
 
-pairwise_sep_plus
+*declare edgewise difference
+pairwise_sep_plus 'the relation between edge (i,j) and (k,l)'
 pairwise_sep_minu
 
 * A1 and A2
