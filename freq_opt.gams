@@ -14,11 +14,11 @@ Alias (N,V,I,J,K,L)
 * set the constraints
 Parameter d_bar(C) / A1 0.037, A2i 0.05, A2j 0.05, E1 0.037, E2 0.05, D1 0.002, S1 0.037, S2 0.045, T1 0.037/; !! CR
 
-Parameter big_M / 1000 /;
-Parameter big_O / 1000 /;
+Parameter big_M / 1000 /;     !!set 2 constants for big M method
+Parameter big_O / 1000 /;  
 
-Parameter set_N(I,J,K);
-Parameter set_N2(I,J,K,L);
+Parameter set_N(I,J,K);       !!the sets of two connected edge
+Parameter set_N2(I,J,K,L);    !!the sets of two disconnected edge 
 
 * fixed anharmonicity ;
 Parameter a / -0.35 /;
@@ -30,17 +30,17 @@ VARIABLES
    abs_diff(I,J)
 
 BINARY VARIABLES
-  a2i(I,J)    !!
+  a2i(I,J)    !!these two give the direction of inequlity A2;
   a2j(I,J)
-  e2i(I,J)
+  e2i(I,J)    !!these two give the direction of inequlity E2
   e2j(I,J)
-  d1i(I,J)   !!these two give the absolute values of constrint D1;
+  d1i(I,J)    !!these two give the direction of inequlity D1;
   d1j(I,J)
-  o(I,J)     !!gives the orientation assocaited with I and J;
-  os2(I,J)
-  t1(I,J,K)
-  ab(I,J)  !!for absolute value
-  diff(I,J,K,L);
+  o(I,J)      !!gives the orientation assocaited with I and J;
+  os2(I,J)    !!gives the orientation assocaited with I and J for spectator constraints S
+  t1(I,J,K)   !!gives the direction of inequlity for spectater constraints T
+  ab(I,J)     !!for absolute value used for frequency difference
+  diff(I,J,K,L);   !!for edgewise difference
 
 * Please note this is an ordered set, ie. (012)!= (210)
 set_N(I,J,K) = 1$((ord(J)<>ord(K)) and (E(I,J) or E(J,I)) and (E(I,K) or E(K,I)));
