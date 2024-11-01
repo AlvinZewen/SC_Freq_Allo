@@ -18,7 +18,7 @@ Run the freq_opt.gams file using GAMS:
 ***gams freq_opt.gams***
 
 Output
-The optimization will output the optimal frequencies for the nodes.
+The optimization will output the optimal frequencies (freqs.csv) for the nodes.
 
 
 2. Yield Estimation with Python (get_yield.py)
